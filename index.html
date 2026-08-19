@@ -1,9 +1,27 @@
+<!--
+  Enigma I web front end: a self-contained, single-file interactive replica
+  of the physical Enigma I machine (rotors, plugboard, keyboard, lampboard),
+  themed as a WWII field console. All CSS and JavaScript live inline in this
+  one file; there are no external assets, libraries, or network calls.
+
+  This page is not a wrapper around Enigma.py and does not call it at
+  runtime. It is a separate, independent reimplementation: the JavaScript
+  "ENGINE" section inside the <script> block below re-implements the same
+  cipher logic as Enigma.py (identical rotor wiring strings, notch letters,
+  reflector, default plugboard pairs, and stepping rules), so the machine
+  runs entirely client-side with no Python process behind it. The two stay
+  in sync only because someone keeps the ported constants and logic matching
+  by hand, not because of any shared code or connection between the files.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ENIGMA I — Field Console</title>
+<!-- All styling below is purely cosmetic (the concrete bunker backdrop, brass
+     and bakelite console, corkboard sidebar, boot animation, etc). None of it
+     carries cipher logic; that lives entirely in the <script> block below. -->
 <style>
   :root{
     --concrete-1:#17170f;
@@ -780,6 +798,8 @@
 <div class="grain" id="grain"></div>
 <div class="vignette"></div>
 
+<!-- Cosmetic boot-up animation shown once on page load, purely presentational
+     and unrelated to the cipher logic; skippable via the button below. -->
 <div class="boot-overlay" id="bootOverlay">
   <div class="boot-lines" id="bootLines"></div>
   <div class="boot-skip" id="bootSkip">SKIP TRANSMISSION ▸</div>
@@ -872,6 +892,9 @@
 
   </div>
 
+  <!-- Bulletin board sidebar: static educational notes about how Enigma
+       works and how to use the console. Purely informational, no cipher
+       logic or interactivity here. -->
   <aside class="corkboard">
     <div class="corkboard-inner">
       <div class="board-title">Operations Board<small>Field notes &amp; learning tips</small></div>
@@ -929,6 +952,13 @@
 
 <script>
 (function(){
+  // Everything below runs client-side, wrapped in an IIFE to keep it out of
+  // the global scope. Roughly in order: the cipher engine itself (ported
+  // from Enigma.py), synthesized sound effects, DOM rendering for the
+  // keyboard/lampboard/plugboard, plugboard wiring interactions, the rotor
+  // bay controls, a live signal-path animation, the per-keystroke and
+  // batch-tape encipher handlers, and small cosmetic touches (mute toggle,
+  // clock, film-grain texture, boot sequence).
 
   /* ================= ENGINE — ported 1:1 from Enigma.py ================= */
   const ALPHABET  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -977,6 +1007,10 @@
     return plugboard;
   }
 
+  // Wraps the rotor/reflector/plugboard state so the page can encipher one
+  // keystroke at a time and update the UI after each one, unlike Enigma.py
+  // which loops over an entire message at once. The core substitution math
+  // in encipherLetter() below mirrors the body of that script's main loop.
   class EnigmaMachine{
     constructor(pairsStr, counts){
       this.setPlugboard(pairsStr);
